@@ -1,6 +1,6 @@
 // @ts-check
 
-import { html, render, nothing } from 'lit-html'
+import { html, nothing } from 'lit-html'
 import { live } from 'lit-html/directives/live.js'
 import { repeat } from 'lit-html/directives/repeat.js'
 import { from_list } from '#gleam/array'
@@ -78,23 +78,17 @@ import {
 
 // -- Page and screen selection -------------------------------------------
 
-/** @param {Model} model @param {Dispatch} dispatch @param {HTMLElement} root */
-export function view(model, dispatch, root) {
+/** @param {Model} model @param {Dispatch} dispatch @param {import('../runtime/instance.mjs').InstanceContext} context */
+export function view(model, dispatch, context) {
+  const { root, id } = context
   /** @param {string} hash */
   const route = (hash) => routePath(hash, root)
-  /** @param {string} name */
-  const id = (name) => `${root.id}-${name}`
-  const mount = root
-  if (!mount) throw new Error('Missing #recipes-app mount element')
 
-  render(
-    html`
+  return html`
       ${saveStatus(model, dispatch)}
       ${renderScreen(screen(model), model, dispatch)}
       ${can_import(model) ? sampleImport(model, dispatch) : nothing}
-    `,
-    mount,
-  )
+    `
 
   /** @param {Screen} screen @param {Model} model @param {Dispatch} dispatch */
   function renderScreen(screen, model, dispatch) {

@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @plugin "@tailwindcss/typography";
 
-@theme {
+/* @theme {
   --animate-island-in: island-in 180ms ease-out both;
 
   @keyframes island-in {
@@ -16,4 +16,4 @@
       scale: 1;
     }
   }
-}
+} */

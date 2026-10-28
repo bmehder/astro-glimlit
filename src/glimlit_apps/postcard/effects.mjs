@@ -10,7 +10,7 @@ import {
   Msg$KeyboardShortcutsFailed,
   Msg$UserPressedNextTheme,
 } from './postcard.mjs'
-import { storageKey } from '../runtime/browser.mjs'
+import { storageKey } from '../../lib/island-persistence.mjs'
 import { nextThemeKey } from './subscriptions.mjs'
 
 const key = 'glimlit.postcard.v1'

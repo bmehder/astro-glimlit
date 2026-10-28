@@ -1,6 +1,6 @@
 // @ts-check
 
-import { html, render } from 'lit-html'
+import { html } from 'lit-html'
 import {
   Msg$UserClickedIncrement,
   Msg$UserClickedDecrement,
@@ -11,15 +11,11 @@ import {
 /**
  * @param {import('./counter.mjs').Model$} model
  * @param {(msg: import('./counter.mjs').Msg$) => void} dispatch
- * @param {HTMLElement} root
- * @returns {void}
+ * @returns {import('lit-html').TemplateResult}
  */
-export function view(model, dispatch, root) {
-  const app = root
-  if (!app) throw new Error('Missing #counter-app mount element')
+export function view(model, dispatch) {
 
-  render(
-    html`
+  return html`
       <h2 class="text-xl font-semibold">Counter</h2>
       <p class="my-8">
         <output class="text-6xl font-medium tabular-nums" aria-live="polite"
@@ -29,9 +25,7 @@ export function view(model, dispatch, root) {
       ${button('−', 'Decrease count', Msg$UserClickedDecrement(), dispatch)}
       ${button('+', 'Increase count', Msg$UserClickedIncrement(), dispatch)}
       ${button('Reset', 'Reset count', Msg$UserClickedReset(), dispatch)}
-    `,
-    app,
-  )
+    `
 }
 
 /**

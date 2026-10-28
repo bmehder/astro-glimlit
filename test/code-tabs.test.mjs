@@ -33,7 +33,7 @@ test('homepage clicks select tabs without moving focus or mutating the old model
 test('homepage keyboard navigation wraps and defers focus until its effect runs', async () => {
   const focused = []
   const root = {
-    id: 'code_tabs-app-2',
+    nodeType: 1, hasAttribute: () => false, id: 'code_tabs-app-2',
     querySelector: (selector) => ({ focus: () => focused.push(selector) }),
   }
   const runtime = createRuntime(root)

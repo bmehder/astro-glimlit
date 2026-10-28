@@ -1,14 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { to_list } from '#gleam/array'
-import { mount } from '../build/dev/javascript/glimlit/glimlit_apps/runtime/mvu.mjs'
+import { start } from '../build/dev/javascript/glimlit/glimlit_apps/runtime/loop.mjs'
 import { createRuntime, run, stop } from '../src/glimlit_apps/runtime/runner.mjs'
 import { saveTodos, loadTodos, focusNewTodo } from '../build/dev/javascript/glimlit/glimlit_apps/todos/effects.mjs'
 import { hashRoute, routePath } from '../src/glimlit_apps/recipes/subscriptions.mjs'
 import { newTodoKey } from '../src/glimlit_apps/todos/subscriptions.mjs'
 
 const settle = () => new Promise(resolve => setImmediate(resolve))
-const root = (app, instance) => ({ id: `${app}-app-${instance}`, dataset: { glimlitInstance: String(instance) } })
+const root = (app, instance) => ({ nodeType: 1, hasAttribute: () => false, id: `${app}-app-${instance}`, dataset: { glimlitInstance: String(instance) } })
 
 function replaceGlobal(t, name, value) {
   const previous = Object.getOwnPropertyDescriptor(globalThis, name)
@@ -28,8 +28,8 @@ test('mounted apps keep their DOM root, model, effect context, and cleanup separ
   } }
   const update = (model, increment) => [model + increment, to_list([])]
   const view = (model, dispatch, root) => { rendered.set(root, model); sent.set(root, dispatch) }
-  const firstStop = mount(firstRoot, [0, to_list([watch])], update, view)
-  const secondStop = mount(secondRoot, [100, to_list([watch])], update, view)
+  const firstStop = start([0, to_list([watch])], update, (model, send) => view(model, send, firstRoot), () => {}, createRuntime(firstRoot))
+  const secondStop = start([100, to_list([watch])], update, (model, send) => view(model, send, secondRoot), () => {}, createRuntime(secondRoot))
   t.after(firstStop); t.after(secondStop)
   await settle()
   assert.deepEqual(contexts, [firstRoot, secondRoot])

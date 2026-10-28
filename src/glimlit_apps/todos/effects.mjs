@@ -1,6 +1,6 @@
 // @ts-check
 
-import { storageKey } from '../runtime/browser.mjs'
+import { storageKey } from '../../lib/island-persistence.mjs'
 import { newTodoKey } from './subscriptions.mjs'
 import {
   Msg$UserPressedNewTodoShortcut,

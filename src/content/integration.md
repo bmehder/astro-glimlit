@@ -1,6 +1,6 @@
 Every interactive app on this site now goes through the local integration in `integrations/glimlit/`. That includes the homepage code tabs and the apps embedded in these articles.
 
-The integration gives Astro responsibility for when an island starts. Glimlit still owns its model, updates, effects, subscriptions, and lit-html view. The original Glimlit repository remains unchanged; this implementation lives entirely in the Astro project.
+The integration gives Astro responsibility for when an island starts. Glimlit still owns its model, updates, effects, subscriptions, and lit-html view. The runtime comes from the corresponding Glimlit implementation; only its Gleam import namespace is adjusted for this site. Astro owns loading and unmount events, while Glimlit owns rendering and hydration.
 
 ## Start with the component
 
@@ -16,17 +16,17 @@ import Counter from '../islands/Counter.mjs'
 
 MDX articles use the same component syntax. The import path depends on the article’s location.
 
-`client:load` starts the app as the page loads. `client:visible` waits until the island enters the viewport. Both produce an empty mount element before the app starts. This integration currently requires a client directive.
+`client:load` starts the app as the page loads. `client:visible` waits until the island enters the viewport. Both render their server output before the app starts: Counter, Postcard, and code tabs produce their initial UI, while Todos and Recipes currently produce empty mounts. This integration currently requires a client directive.
 
 ## One small adapter per app
 
-`src/islands/Counter.mjs` connects the component to its compiled Gleam module:
+`src/islands/Todos.mjs` shows a browser-only adapter connected to its compiled Gleam module:
 
 ```javascript
 import { defineApp } from '../../integrations/glimlit/component.mjs'
 
-export default defineApp('counter', () =>
-  import('../../build/dev/javascript/glimlit/glimlit_apps/counter/counter.mjs'),
+export default defineApp('todos', () =>
+  import('../../build/dev/javascript/glimlit/glimlit_apps/todos/todos.mjs'),
 )
 ```
 
@@ -35,11 +35,12 @@ The dynamic import loads the app module when the renderer starts it. There is no
 The helper in `component.mjs` is small:
 
 ```javascript
-export function defineApp(app, load) {
+export function defineApp(app, load, template = undefined) {
   return Object.assign((_props) => null, {
     framework: 'glimlit',
     app,
     load,
+    template,
   })
 }
 ```
@@ -62,7 +63,7 @@ This uses Astro’s [renderer API](https://docs.astro.build/en/reference/rendere
 
 ## The server produces a mount
 
-`server.mjs` recognizes adapters through their `framework` property. For a component with a client directive, it returns an empty element:
+`server.mjs` recognizes adapters through their `framework` property. For an adapter without a server template, it returns an empty element:
 
 ```html
 <div data-glimlit-root tabindex="-1" class="min-h-80"></div>
@@ -70,7 +71,7 @@ This uses Astro’s [renderer API](https://docs.astro.build/en/reference/rendere
 
 The renderer copies and escapes the component’s `class` prop. That means a minimum height can reserve space before JavaScript loads. In an article, `not-prose` keeps the article’s typography styles out of the app.
 
-The element contains no app UI. We do not duplicate the lit-html view or maintain a second set of buttons and panels in Astro.
+These empty mounts contain no app UI. The postcard and code tabs opt into server rendering instead, using the same templates that their browser views render.
 
 `client:only="glimlit"` also works, but skips this server-rendering step. The client creates the mount instead, so its classes cannot reserve space before JavaScript runs.
 
@@ -78,7 +79,7 @@ The element contains no app UI. We do not duplicate the lit-html view or maintai
 
 Astro wraps the component in an island and calls `client.mjs` when its loading directive allows it.
 
-The client renderer finds matching islands and numbers them in document order. Two counters receive `counter-app-1` and `counter-app-2`, even if the second one starts first. It reuses the server mount when available, assigns its ID and instance number, and applies the supplied classes.
+The client renderer finds matching islands and numbers them in document order. Server-rendered mounts retain their server-assigned IDs, with a separate `-ssr-` prefix to avoid collisions with client-only mounts. Two counters receive `counter-app-1` and `counter-app-2`, even if the second one starts first. It reuses the server mount when available, assigns its ID and instance number, and applies the supplied classes.
 
 Then it loads and starts the app:
 
@@ -96,18 +97,32 @@ The connection check avoids starting an app if its island disappeared while the 
 Each app exposes the same entry point:
 
 ```gleam
-pub fn main(root: effect.Root) -> fn() -> Nil {
-  mvu.mount(root, init(), update, view)
+pub fn main(root: Root) -> fn() -> Nil {
+  mvu.start(init(), update, view, root)
 }
 ```
 
-The view renders into that root. Effects receive the same root in their context. DOM IDs, focus queries, and keyboard listeners stay scoped to the instance, so repeated apps can coexist.
+The view returns a template and receives instance context as its third argument. Its `id(name)` helper generates IDs belonging to the root. In the browser, `context.root` is the mount; effects receive the same root and ID helper. Glimlit commits the template into that root. DOM IDs, focus queries, and keyboard listeners stay scoped to the instance, so repeated apps can coexist.
 
 The site also uses instance numbers to separate persisted copies and recipe route prefixes. Those conventions are local experiments, rather than a settled public Glimlit API. Keep one adapter module per app so the numbering stays consistent.
 
-## What remains separate
+## Server rendering and hydration
 
-The integration currently mounts apps in the browser. It does not render their UI on the server or hydrate existing app HTML. Reserved space and the homepage’s CSS entrance animation still help with loading.
+The postcard adapter supplies an optional third argument to `defineApp`: a function that creates its initial lit-html template from `init()` and a server-assigned root ID. Constructing the initial model does not run its effects.
+
+The postcard’s `view.mjs` exports one `view(model, dispatch, context)` function that returns a template. The adapter creates server context with `contextForId(rootId)` and calls that same view on the server; the browser runtime supplies context with the same identity and a real root. The server uses `@lit-labs/ssr` to serialize it, including Lit’s hydration markers, and marks the mount with `data-glimlit-ssr`.
+
+When `client:visible` starts the island, it calls `main(root)` exactly as it does for an empty mount. Glimlit detects the marker and hydrates its first view internally. This attaches bindings and event handlers to the existing HTML using the real dispatcher before effects run. All later updates render normally. App views do not import a renderer, choose a mode, or carry a hydration wrapper.
+
+The initial model, template, and root ID must match on both sides. Browser effects start only after that first view; storage access remains in effects. Lit’s SSR and hydration packages are experimental.
+
+Native form controls need particular care. The postcard uses a boolean attribute for its checkbox. Lit SSR does not serialize a textarea’s `.value` as text, so the template also supplies `data-ssr-value`; the server copies that escaped value into the textarea’s initial text content. This keeps the message visible before JavaScript without maintaining a separate view.
+
+The homepage code tabs now use the same approach, including server-rendered syntax highlighting and hydration of tab click and keyboard handlers. The highlighted examples still require Shiki in the browser because highlighting runs when the view module loads; moving that work entirely to the build is a separate optimization.
+
+Counter also uses its shared view for initial HTML. Todos and Recipes still start from empty mounts. `client:only="glimlit"` exercises the same app startup without server HTML.
+
+## What remains separate
 
 Gleam compilation remains a separate step: the site’s scripts run `gleam build` before Astro. After changing app sources, rebuild Gleam and reload. Direct `.gleam` imports and automatic compiler watching are not implemented.
 

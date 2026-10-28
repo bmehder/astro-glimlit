@@ -1,6 +1,6 @@
 // @ts-check
 
-import { html, render, nothing } from 'lit-html'
+import { html, nothing } from 'lit-html'
 import { from_list } from '#gleam/array'
 import { repeat } from 'lit-html/directives/repeat.js'
 import { live } from 'lit-html/directives/live.js'
@@ -42,12 +42,9 @@ import {
 /** @typedef {Event & { currentTarget: HTMLInputElement }} InputElementEvent */
 /** @typedef {(event: InputElementEvent) => void} InputHandler */
 
-/** @param {Model} model @param {Dispatch} dispatch @param {HTMLElement} root */
-export function view(model, dispatch, root) {
-  /** @param {string} name */
-  const id = (name) => `${root.id}-${name}`
-  const app = root
-  if (!app) throw new Error('Missing #todos-app mount element')
+/** @param {Model} model @param {Dispatch} dispatch @param {import('../runtime/instance.mjs').InstanceContext} context */
+export function view(model, dispatch, context) {
+  const { root, id } = context
 
   /** @type {Todo[]} */
   const todos = from_list(Model$Model$todos(model))
@@ -68,8 +65,7 @@ export function view(model, dispatch, root) {
   const shortcutText = shortcutMessage(Model$Model$shortcut_status(model))
   const rows = repeat(todos, (todo) => Todo$Todo$id(todo), todoRow)
 
-  render(
-    html`
+  return html`
       <header class="mb-8">
         <h2 class="text-2xl font-semibold tracking-tight">Todos</h2>
       </header>
@@ -110,9 +106,7 @@ export function view(model, dispatch, root) {
       }
       <p class="mt-8 text-xs text-slate-500">${storageText}</p>
       <p class="mt-2 text-xs text-slate-500" role="status">${shortcutText}</p>
-    `,
-    app,
-  )
+    `
 
   /** @param {Todo} todo */
   function todoRow(todo) {
@@ -155,22 +149,22 @@ export function view(model, dispatch, root) {
           ${button('Delete', handleDelete)}
         </div>
         <dialog
-          id=${`${root.id}-delete-todo-${Todo$Todo$id(todo)}`}
+          id=${id(`delete-todo-${Todo$Todo$id(todo)}`)}
           class="m-auto w-[calc(100%-3rem)] max-w-md rounded-2xl border border-slate-600 bg-slate-900 p-7 text-slate-100 shadow-2xl backdrop:bg-slate-950/70"
-          aria-labelledby=${`${root.id}-delete-title-${Todo$Todo$id(todo)}`}
-          aria-describedby=${`${root.id}-delete-description-${Todo$Todo$id(todo)}`}
+          aria-labelledby=${id(`delete-title-${Todo$Todo$id(todo)}`)}
+          aria-describedby=${id(`delete-description-${Todo$Todo$id(todo)}`)}
           @close=${handleDeleteDialogClose}
         >
           <form method="dialog">
             <h2
               class="text-2xl font-semibold"
-              id=${`${root.id}-delete-title-${Todo$Todo$id(todo)}`}
+              id=${id(`delete-title-${Todo$Todo$id(todo)}`)}
             >
               Delete todo?
             </h2>
             <p
               class="mt-3 text-slate-300 wrap-anywhere"
-              id=${`${root.id}-delete-description-${Todo$Todo$id(todo)}`}
+              id=${id(`delete-description-${Todo$Todo$id(todo)}`)}
             >
               “${Todo$Todo$title(todo)}” will be removed from your list.
             </p>
@@ -217,11 +211,11 @@ export function view(model, dispatch, root) {
         <div class="min-w-0 flex-1 basis-48">
           <label
             class="mb-2 block text-sm text-slate-400"
-            for=${`${root.id}-edit-${todoId}`}
+            for=${id(`edit-${todoId}`)}
             >Edit todo</label
           >
           <input
-            id=${`${root.id}-edit-${todoId}`}
+            id=${id(`edit-${todoId}`)}
             class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 focus:border-teal-400 focus:outline-none"
             .value=${live(text)}
             @input=${handleEditInput}
@@ -250,7 +244,7 @@ export function view(model, dispatch, root) {
 
   /** @param {number} todoId */
   function openDeleteDialog(todoId) {
-    const dialog = root.querySelector(`[id="${root.id}-delete-todo-${todoId}"]`)
+    const dialog = root?.querySelector(`[id="${id(`delete-todo-${todoId}`)}"]`)
     if (dialog instanceof HTMLDialogElement) {
       // Escape does not replace the previous result, so reset it on each opening.
       dialog.returnValue = ''

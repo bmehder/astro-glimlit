@@ -1,82 +1,29 @@
-import gleam/list
-import glimlit_apps/runtime/effect.{type Effect, type Runtime}
+import glimlit_apps/runtime/effect.{type Effect}
+import glimlit_apps/runtime/loop
+import glimlit_apps/runtime/view.{type Context, type Root, type View}
 
-// Mutation is isolated in a tiny JavaScript mutable reference.
-type MutableRef(value)
+@external(javascript, "./render.mjs", "createRenderer")
+fn create_renderer(root: Root) -> fn(View) -> Nil
 
-@external(javascript, "./browser.mjs", "mutableRef")
-fn mutable_ref(value: value) -> MutableRef(value)
+@external(javascript, "./instance.mjs", "createContext")
+fn create_context(root: Root) -> Context
 
-@external(javascript, "./browser.mjs", "read")
-fn read(ref: MutableRef(value)) -> value
-
-@external(javascript, "./browser.mjs", "write")
-fn write(ref: MutableRef(value), value: value) -> Nil
-
+/// Start an app in its root. Glimlit hydrates marked server HTML on the first
+/// view and renders normally otherwise. All later updates render normally.
+/// The first view is committed before effects run. Keep the returned cleanup
+/// function and call it when the host removes the app.
 pub fn start(
   initial: #(model, List(Effect(msg))),
   update: fn(model, msg) -> #(model, List(Effect(msg))),
-  view: fn(model, fn(msg) -> Nil) -> Nil,
+  view: fn(model, fn(msg) -> Nil, Context) -> View,
+  root: Root,
 ) -> fn() -> Nil {
-  start_runtime(initial, update, view, effect.runtime())
-}
-
-// Each mounted app receives its own DOM root and effect context.
-pub fn mount(
-  root: effect.Root,
-  initial: #(model, List(Effect(msg))),
-  update: fn(model, msg) -> #(model, List(Effect(msg))),
-  view: fn(model, fn(msg) -> Nil, effect.Root) -> Nil,
-) -> fn() -> Nil {
-  start_runtime(
+  let context = create_context(root)
+  loop.start(
     initial,
     update,
-    fn(model, dispatch) { view(model, dispatch, root) },
+    fn(model, dispatch) { view(model, dispatch, context) },
+    create_renderer(root),
     effect.runtime_at(root),
   )
-}
-
-fn start_runtime(
-  initial: #(model, List(Effect(msg))),
-  update: fn(model, msg) -> #(model, List(Effect(msg))),
-  view: fn(model, fn(msg) -> Nil) -> Nil,
-  runtime: Runtime(msg),
-) -> fn() -> Nil {
-  let #(initial_model, _) = initial
-  let model = mutable_ref(initial_model)
-  render_and_run(initial, model, update, view, runtime)
-  fn() { effect.stop(runtime) }
-}
-
-fn dispatch(
-  model: MutableRef(model),
-  msg: msg,
-  update: fn(model, msg) -> #(model, List(Effect(msg))),
-  view: fn(model, fn(msg) -> Nil) -> Nil,
-  runtime: Runtime(msg),
-) -> Nil {
-  let next = update(read(model), msg)
-  render_and_run(next, model, update, view, runtime)
-}
-
-fn render_and_run(
-  next: #(model, List(Effect(msg))),
-  model: MutableRef(model),
-  update: fn(model, msg) -> #(model, List(Effect(msg))),
-  view: fn(model, fn(msg) -> Nil) -> Nil,
-  runtime: Runtime(msg),
-) -> Nil {
-  let #(next_model, effects) = next
-  write(model, next_model)
-  let send = fn(msg) {
-    case effect.is_active(runtime) {
-      True -> dispatch(model, msg, update, view, runtime)
-      False -> Nil
-    }
-  }
-  view(next_model, send)
-  list.each(effects, fn(effect) {
-    let _ = effect.run(effect, send, runtime)
-    Nil
-  })
 }

@@ -1,8 +1,7 @@
 import gleam/javascript/promise.{type Promise}
+import glimlit_apps/runtime/view.{type Root}
 
 pub type Effect(msg)
-
-pub type Root
 
 pub type Runtime(msg)
 

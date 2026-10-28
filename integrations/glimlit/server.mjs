@@ -1,3 +1,8 @@
+import { render } from '@lit-labs/ssr'
+import { collectResult } from '@lit-labs/ssr/lib/render-result.js'
+
+const pageInstances = new WeakMap()
+
 const escapeAttribute = (value) =>
   String(value).replace(
     /[&"<>']/g,
@@ -14,17 +19,36 @@ const escapeAttribute = (value) =>
 export default {
   name: 'glimlit',
   check: (component) => component?.framework === 'glimlit',
-  renderToStaticMarkup(_component, props, _slots, metadata) {
+  async renderToStaticMarkup(component, props, _slots, metadata) {
     if (!metadata?.hydrate) {
       throw new Error(
         'Glimlit currently needs a client directive, such as client:load.',
       )
     }
-    // This is only a mount point, not a server-rendered app or duplicated view.
     const classAttribute =
       props.class == null ? '' : ` class="${escapeAttribute(props.class)}"`
+    if (!component.template)
+      return {
+        html: `<div data-glimlit-root tabindex="-1"${classAttribute}></div>`,
+      }
+
+    // Astro supplies one result object per page render, so counts never leak across pages.
+    const counts = pageInstances.get(this.result) ?? new Map()
+    pageInstances.set(this.result, counts)
+    const instance = (counts.get(component.app) ?? 0) + 1
+    counts.set(component.app, instance)
+    // Separate server IDs from client-only mounts, which skip this renderer.
+    const id = `${component.app}-app-ssr-${instance}`
+    const template = await component.template(id)
+    const rendered = await collectResult(render(template))
+    // Lit SSR does not serialize textarea.value. The template supplies its
+    // escaped initial value as an attribute; use it as the native default text.
+    const html = rendered.replace(
+      /(<textarea\b[^>]*\bdata-ssr-value="([^"]*)"[^>]*>)(<\/textarea>)/g,
+      (_match, opening, value, closing) => opening + value + closing,
+    )
     return {
-      html: `<div data-glimlit-root tabindex="-1"${classAttribute}></div>`,
+      html: `<div data-glimlit-root data-glimlit-ssr id="${escapeAttribute(id)}" data-glimlit-instance="${instance}" tabindex="-1"${classAttribute}>${html}</div>`,
     }
   },
 }

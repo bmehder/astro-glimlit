@@ -1,5 +1,6 @@
 import glimlit_apps/runtime/effect.{type Effect}
 import glimlit_apps/runtime/mvu
+import glimlit_apps/runtime/view.{type Context, type Root, type View}
 
 // -- Types ---------------------------------------------------------------
 
@@ -65,7 +66,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
 // -- View ----------------------------------------------------------------
 
 @external(javascript, "./view.mjs", "view")
-fn view(model: Model, dispatch: fn(Msg) -> Nil, root: effect.Root) -> Nil
+fn view(model: Model, dispatch: fn(Msg) -> Nil, context: Context) -> View
 
 // -- Effects -------------------------------------------------------------
 
@@ -74,6 +75,6 @@ fn focus_tab(tab: Tab) -> Effect(Msg)
 
 // -- Entry point ---------------------------------------------------------
 
-pub fn main(root: effect.Root) -> fn() -> Nil {
-  mvu.mount(root, init(), update, view)
+pub fn main(root: Root) -> fn() -> Nil {
+  mvu.start(init(), update, view, root)
 }

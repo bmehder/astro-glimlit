@@ -1,9 +1,10 @@
 // @ts-check
 
+import { createContext } from './instance.mjs'
 import { createSubscriptions } from './subscriptions.mjs'
 
-/** @template Msg @typedef {{active: boolean, subscriptions: import('./subscriptions.mjs').Subscriptions<Msg> | null, root?: HTMLElement}} Runtime */
-/** @template Msg @typedef {{subscriptions: import('./subscriptions.mjs').Subscriptions<Msg>, dispatch: (message: Msg) => void, root?: HTMLElement}} Context */
+/** @template Msg @typedef {{active: boolean, subscriptions: import('./subscriptions.mjs').Subscriptions<Msg> | null, context: import('./instance.mjs').InstanceContext}} Runtime */
+/** @template Msg @typedef {import('./instance.mjs').InstanceContext & {subscriptions: import('./subscriptions.mjs').Subscriptions<Msg>, dispatch: (message: Msg) => void}} Context */
 
 /**
  * Create an independent runtime. Its subscription manager is created by the first
@@ -14,7 +15,7 @@ import { createSubscriptions } from './subscriptions.mjs'
  * @returns {Runtime<Msg>}
  */
 export function createRuntime(root) {
-  return { active: true, subscriptions: null, root }
+	return { active: true, subscriptions: null, context: root ? createContext(root) : { id: name => name } }
 }
 
 /**
@@ -25,9 +26,9 @@ export function createRuntime(root) {
  * @param {Runtime<Msg>} runtime
  */
 export function stop(runtime) {
-  if (!runtime.active) return
-  runtime.active = false
-  runtime.subscriptions?.stopAll()
+	if (!runtime.active) return
+	runtime.active = false
+	runtime.subscriptions?.stopAll()
 }
 
 /**
@@ -54,34 +55,29 @@ export function stop(runtime) {
  * @returns {Promise<void>}
  */
 export function run(effect, dispatch, runtime = createRuntime()) {
-  /** @param {Msg} message */
-  const send = (message) => {
-    if (runtime.active) dispatch(message)
-  }
-  return Promise.resolve()
-    .then(() => {
-      if (runtime.active) {
-        // All sources in an app share the first effect's guarded dispatcher.
-        const subscriptions = (runtime.subscriptions ??=
-          createSubscriptions(send))
-        return effect.perform({
-          subscriptions,
-          dispatch: send,
-          root: runtime.root,
-        })
-      }
-    })
-    .then(
-      (value) => {
-        if (runtime.active && effect.onSuccess)
-          send(effect.onSuccess(/** @type {Value} */ (value)))
-      },
-      (error) => {
-        if (!runtime.active) return
-        if (effect.onFailure) send(effect.onFailure(error))
-        else throw error
-      },
-    )
+	/** @param {Msg} message */
+	const send = message => {
+		if (runtime.active) dispatch(message)
+	}
+	return Promise.resolve()
+		.then(() => {
+			if (runtime.active) {
+				// All sources in an app share the first effect's guarded dispatcher.
+				const subscriptions = runtime.subscriptions ??= createSubscriptions(send)
+				return effect.perform({ ...runtime.context, subscriptions, dispatch: send })
+			}
+		})
+		.then(
+			value => {
+				if (runtime.active && effect.onSuccess)
+					send(effect.onSuccess(/** @type {Value} */ (value)))
+			},
+			error => {
+				if (!runtime.active) return
+				if (effect.onFailure) send(effect.onFailure(error))
+				else throw error
+			},
+		)
 }
 
 /**
@@ -92,4 +88,4 @@ export function run(effect, dispatch, runtime = createRuntime()) {
  * @param {Runtime<Msg>} runtime
  * @returns {boolean}
  */
-export const isActive = (runtime) => runtime.active
+export const isActive = runtime => runtime.active

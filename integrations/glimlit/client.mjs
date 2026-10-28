@@ -11,7 +11,7 @@ export default (element) => async (component, props) => {
   const root =
     element.querySelector(':scope > [data-glimlit-root]') ??
     document.createElement('div')
-  root.id = `${component.app}-app-${instance}`
+  root.id ||= `${component.app}-app-${instance}`
   root.dataset.glimlitInstance = String(instance)
   root.tabIndex = -1
   root.className = props.class ?? ''

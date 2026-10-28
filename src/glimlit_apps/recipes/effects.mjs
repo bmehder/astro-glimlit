@@ -11,7 +11,7 @@ import {
   Msg$BrowserHashChanged,
 } from './recipes.mjs'
 import { hashRoute, routePath } from './subscriptions.mjs'
-import { storageKey as instanceStorageKey } from '../runtime/browser.mjs'
+import { storageKey as instanceStorageKey } from '../../lib/island-persistence.mjs'
 
 /** @typedef {import('./recipes.mjs').Msg$} Msg */
 export const storageKey = 'glimlit.recipes.v1'
