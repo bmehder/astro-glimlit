@@ -1,0 +1,44 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content'
+import Layout from '../../layouts/Layout.astro'
+import Prose from '../../components/Prose.astro'
+
+export async function getStaticPaths() {
+	const demos = await getCollection('demos')
+	return demos.map(demo => ({ params: { id: demo.id }, props: { demo } }))
+}
+
+interface Props {
+	demo: CollectionEntry<'demos'>
+}
+
+const { demo } = Astro.props
+const { Content } = await render(demo)
+---
+
+<Layout title={demo.data.title}>
+	<article>
+		<a href='/demos/' class='text-sm text-teal-200 hover:underline'>
+			← All demos
+		</a>
+		<h1 class='mt-5 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl'>
+			{demo.data.title}
+		</h1>
+		<time
+			datetime={demo.data.date.toISOString()}
+			class='mt-5 block text-sm text-slate-400'
+		>
+			{demo.data.date.toLocaleDateString('en-GB', {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric',
+				timeZone: 'UTC',
+			})}
+		</time>
+		<div class='mt-8'>
+			<Prose>
+				<Content />
+			</Prose>
+		</div>
+	</article>
+</Layout>

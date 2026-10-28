@@ -1,0 +1,36 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Prose from '../components/Prose.astro'
+import { Content } from '../content/integration.md'
+import Counter from '../islands/Counter.mjs'
+import Todos from '../islands/Todos.mjs'
+const counterClass =
+  'rounded-xl border border-slate-800 bg-slate-900 p-6 sm:p-8'
+---
+
+<Layout title="Astro integration">
+  <h1 class="text-4xl font-semibold">Glimlit as an Astro integration</h1>
+  <p class="mt-4 max-w-2xl leading-relaxed text-slate-300">
+    All Glimlit apps on this site use Astro’s renderer API. Each counter has its
+    own state. The todo app starts when it approaches the viewport.
+  </p>
+  <div class="mt-10 grid gap-6 sm:grid-cols-2">
+    <section class="min-h-80">
+      <p class="mb-3 text-sm text-teal-200">Counter · client:load</p>
+      <Counter client:load class={counterClass} />
+    </section>
+    <section class="min-h-80">
+      <p class="mb-3 text-sm text-teal-200">Counter · client:only="glimlit"</p>
+      <Counter client:only="glimlit" class={counterClass} />
+    </section>
+  </div>
+  <section class="mt-32 min-h-96 max-w-2xl">
+    <h2 class="mb-4 text-2xl font-semibold">Todos · client:visible</h2>
+    <Todos client:visible />
+  </section>
+  <article class="mt-20">
+    <Prose>
+      <Content />
+    </Prose>
+  </article>
+</Layout>

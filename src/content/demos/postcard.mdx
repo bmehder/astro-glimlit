@@ -1,0 +1,26 @@
+---
+title: "A postcard of your own"
+description: "Combine a live preview, colour choices, and browser saving."
+date: 2026-10-27
+order: 3
+---
+
+import Postcard from '../../islands/Postcard.mjs'
+
+A small editor makes the division between the page and its island easy to see. The article is static; the postcard below responds as you type.
+
+## Messages give changes a name
+
+Typing a title sends `UserChangedTitle`. Choosing a colour sends `UserSelectedTheme`. The model holds the current design, and the view presents it.
+
+The browser still provides the familiar details of inputs and buttons, including focus and text selection.
+
+Try editing your postcard here, then read on for saving and keyboard shortcuts.
+
+<Postcard client:load class="not-prose my-8 text-base leading-normal text-slate-100" />
+
+## Saving is a separate action
+
+**Save design** stores a snapshot in this browser. **Restore saved** brings it back. Editing alone changes the live preview without writing a new saved copy.
+
+Enable keyboard shortcuts and press **N** while the demo is focused and outside an input to cycle through the colours.

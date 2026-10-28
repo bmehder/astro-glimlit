@@ -1,0 +1,32 @@
+---
+title: "Saving a todo list"
+description: "Add browser storage and a keyboard shortcut to the same update loop."
+date: 2026-10-27
+order: 2
+---
+
+import Todos from '../../islands/Todos.mjs'
+
+A todo list adds a useful question to the counter's loop: where should browser work happen?
+
+## Effects describe work
+
+The update function chooses what should change and returns any effects alongside the next model. An effect saves the list to browser storage; its result returns as another message.
+
+This keeps storage access out of the pure update function. If storage fails, the app can show that result while keeping the current list in memory.
+
+Try adding and editing a todo here. Reload the page to see that the saved list is still there.
+
+<Todos client:load class="not-prose my-8 text-base leading-normal text-slate-100 max-w-2xl" />
+
+## A subscription has a lifetime
+
+With this demo focused, press **N** while the demo is focused and outside an input field to focus the new-todo input. That keyboard listener is a subscription managed by the app runtime.
+
+Place the component anywhere in an MDX article:
+
+```mdx
+<Todos client:load class="not-prose my-8 text-base leading-normal text-slate-100 max-w-2xl" />
+```
+
+Moving that line moves the app without changing the page template.

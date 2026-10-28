@@ -1,0 +1,38 @@
+---
+title: "Several screens, one island"
+description: "Let Astro own the article while a recipe box manages its own screens."
+date: 2026-10-27
+order: 4
+---
+
+import Recipes from '../../islands/Recipes.mjs'
+
+An island can contain more than one screen. The recipe box below includes a collection, individual recipes, and an editor.
+
+## Two levels of navigation
+
+Astro owns the article's path:
+
+```text
+/demos/recipes/
+```
+
+The recipe app uses the URL fragment for its own screens:
+
+```text
+#/recipe/1
+#/recipe/1/edit
+#/new
+```
+
+Opening a recipe changes the app's screen while keeping this article in place. Browser Back steps through those screens too.
+
+Open a recipe here, edit one, or import the samples.
+
+<Recipes client:load class="not-prose my-8 text-base leading-normal text-slate-100" />
+
+## More work, the same structure
+
+Searching, validation, saving, and sample imports all use the same model, message, and update structure as the smaller demos.
+
+Everything is kept in this browser; there is no account or remote recipe service.

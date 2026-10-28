@@ -1,0 +1,41 @@
+---
+import { getCollection } from 'astro:content'
+import Layout from '../../layouts/Layout.astro'
+
+const demos = (await getCollection('demos')).sort(
+	(a, b) => a.data.order - b.data.order,
+)
+---
+
+<Layout title='Demos'>
+	<p class='text-sm font-medium uppercase tracking-widest text-teal-200'>
+		Notes with a little interaction
+	</p>
+	<h1 class='mt-5 text-4xl font-semibold tracking-tight sm:text-5xl'>The demos.</h1>
+	<p class='mt-5 max-w-2xl text-lg leading-relaxed text-slate-300'>
+		Explore Glimlit through short articles and live apps. Each demo is written in
+		Markdown.
+	</p>
+	<div class='mt-10 grid gap-5 sm:grid-cols-2'>
+		{demos.map(demo => (
+			<a
+				href={`/demos/${demo.id}/`}
+				class='group flex flex-col rounded-xl border border-slate-700 bg-slate-900 p-6 hover:border-teal-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-300'
+			>
+				<time datetime={demo.data.date.toISOString()} class='text-sm text-slate-400'>
+					{demo.data.date.toLocaleDateString('en-GB', {
+						day: 'numeric',
+						month: 'long',
+						year: 'numeric',
+						timeZone: 'UTC',
+					})}
+				</time>
+				<h2 class='mt-3 text-2xl font-semibold'>{demo.data.title}</h2>
+				<p class='mt-3 grow leading-relaxed text-slate-300'>
+					{demo.data.description}
+				</p>
+				<span class='mt-6 text-teal-200 group-hover:underline'>Open demo →</span>
+			</a>
+		))}
+	</div>
+</Layout>

@@ -1,0 +1,41 @@
+{
+  "name": "astro-glimlit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "gleam build && astro dev --host 127.0.0.1",
+    "build": "gleam build && astro build",
+    "preview": "astro preview --host 127.0.0.1",
+    "check": "gleam build && astro check",
+    "test": "gleam build && node --test test/*.test.mjs",
+    "format": "prettier --write \"src/**/*.astro\"",
+    "format:check": "prettier --check \"src/**/*.astro\""
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^8.1.1",
+    "@tailwindcss/typography": "^0.5.20",
+    "astro": "^7.4.2",
+    "lit-html": "^3.3.3",
+    "shiki": "^4.5.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@chouquette/gleam": "^1.19.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "prettier": "3.9.10",
+    "prettier-plugin-astro": "1.1.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3"
+  },
+  "imports": {
+    "#gleam/array": "./build/dev/javascript/gleam_javascript/gleam/javascript/array.mjs"
+  },
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "overrides": {
+    "@tailwindcss/typography": {
+      "postcss-selector-parser": "^6.1.5"
+    }
+  }
+}

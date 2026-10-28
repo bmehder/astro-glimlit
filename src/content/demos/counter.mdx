@@ -1,0 +1,40 @@
+---
+title: "A small interactive island"
+description: "Start with a static page and add one counter."
+date: 2026-10-27
+order: 1
+---
+
+import Counter from '../../islands/Counter.mjs'
+
+A page can stay mostly static and still have a little interaction. This article is written in MDX; the counter below is a Glimlit app.
+
+Try increasing and resetting the number here. The rest of this article remains ordinary HTML.
+
+<Counter client:load class="not-prose my-8 text-base leading-normal text-slate-100 rounded-xl border border-slate-800 bg-slate-900 p-6 sm:p-8" />
+
+## The smallest loop
+
+The app holds a count in its model. A button sends a message, the update function produces the next model, and the view renders it.
+
+```gleam
+case msg {
+  UserClickedIncrement -> #(Model(count: model.count + 1), [])
+  UserClickedDecrement -> #(Model(count: model.count - 1), [])
+  UserClickedReset -> #(Model(count: 0), [])
+}
+```
+
+The empty list means there are no effects to run. For this counter, updating the model is all the work needed.
+
+## Another independent island
+
+This is a second counter on the same page. Changing one counter leaves the other alone.
+
+<Counter client:load class="not-prose my-8 text-base leading-normal text-slate-100 rounded-xl border border-slate-800 bg-slate-900 p-6 sm:p-8" />
+
+## The page and the app
+
+Astro renders the article at build time. The Glimlit integration imports the compiled app and calls `main(root)` when Astro starts the island. The app renders only inside its mount element.
+
+The counter appears exactly where its component is placed in this MDX file.
