@@ -1,6 +1,12 @@
 # Glimlit follow-ups
 
-This Astro site is a proof of concept. Keep these questions for future work on Glimlit itself; do not expand the framework implementation in this project to solve them.
+This file records the Astro experiment, the subsequent migration to the shared
+Glimlit runtime, and remaining design work. The current contract is documented
+in the integration guide; earlier alternatives below are historical findings.
+
+For the current implementation and a code-reading order, start with the
+[integration guide](src/content/integration.md) or `/integration/` on the running
+site. The sections below preserve findings and design history.
 
 ## Current migration status — 28 October 2026
 
@@ -29,7 +35,7 @@ earlier experiment, not the current migration state.
   adapter. It has not become Glimlit runtime behavior. Host initialization data,
   nondeterministic initialization snapshots, and pre-hydration edits remain open.
 
-## Handoff context for the original Glimlit project
+## Historical handoff: before the shared-runtime migration
 
 The broader design question is whether Glimlit should optionally support server rendering and hydration in **any host**, including static sites, server-rendered applications, and existing HTML pages. Astro is the test host, not the intended boundary of this capability.
 
@@ -182,3 +188,14 @@ No initialization-data support has been implemented or verified in this experime
 - Runtime files were compared mechanically with Glimlit; all match except the
   Gleam import prefix. Existing Astro textarea and persistence workarounds remain
   outside the runtime. A temporary validation page was removed after testing.
+
+
+### Runtime organization follow-up
+
+Startup and the internal loop have been consolidated into `mvu.gleam`. The tiny
+mutable-reference operations moved into `runner.mjs`, removing `loop.gleam` and
+`browser.mjs`. The runtime now has eight source files. `start_loop` is an internal
+entry used by startup and the DOM-independent loop tests; apps continue to use
+`mvu.start(init(), update, view, root)`. Rendering, instance identity, server HTML,
+and subscription lifetimes retain their boundaries. Astro mirrors the same
+runtime organization with only Gleam import namespaces adjusted.

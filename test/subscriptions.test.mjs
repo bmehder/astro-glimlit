@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSubscriptions } from '../src/glimlit_apps/runtime/subscriptions.mjs';
 import { createRuntime, run, stop } from '../src/glimlit_apps/runtime/runner.mjs';
-import { start } from '../build/dev/javascript/glimlit/glimlit_apps/runtime/loop.mjs';
+import { start_loop as start } from '../build/dev/javascript/glimlit/glimlit_apps/runtime/mvu.mjs';
 import { from_list as toArray, to_list as toList } from '#gleam/array';
 
 const settle = () => new Promise(resolve => setImmediate(resolve));

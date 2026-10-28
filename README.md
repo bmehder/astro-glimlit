@@ -39,7 +39,19 @@ Text after the app.
 
 Adapters live in `src/islands/`: `Counter`, `Todos`, `Postcard`, `Recipes`, and `CodeTabs`. Their small `defineApp(name, loader)` exports connect Astro to compiled Gleam modules. Add another adapter to include another app; there is no central app-name list or mount-scanning wrapper to update.
 
-`client:load` starts an app immediately. `client:visible` waits until its mount enters the viewport. `/integration/` explains the renderer and loading directives, including `client:only="glimlit"`. The homepage and demo articles use `client:load`.
+`client:load` starts an app as the page loads. `client:visible` waits until its mount enters the viewport. `/integration/` explains the renderer and loading directives, including `client:only="glimlit"`. The homepage uses `client:load`; the Postcard article uses `client:visible` to demonstrate delayed startup. Each MDX component declares its loading directive.
+
+## Catching up on the implementation
+
+Start with [the integration guide](src/content/integration.md), also available at
+`/integration/` when the site is running. It has a before/after comparison and a
+code-reading order from the Counter adapter through server HTML, client startup,
+instance context, the MVU loop, and cleanup.
+
+For the shared Glimlit implementation, read
+[Understanding the current runtime](https://github.com/bmehder/glimlit/blob/main/notes/runtime-walkthrough.md).
+`GLIMLIT-FOLLOWUPS.md` records experiment history and unresolved questions; it is
+not the first place to learn the current API.
 
 ## How the renderer works
 
@@ -52,6 +64,20 @@ Every app exposes `main(root)`, including the homepage code tabs. The view retur
 Repeated components are independent. Instances are numbered in document order, even when Astro loads them in a different order. The first copy retains its established browser-storage key and recipe `#/...` routes. Later copies use separate storage keys and route prefixes such as `#recipes-app-2/recipe/1`. Persisted copies follow their position on the page. Use one adapter module per app.
 
 Counter, Postcard, and code tabs use server rendering and hydration through Lit Labs. Their adapters obtain the initial template from the same `view` used for browser updates. Glimlit detects the server marker, hydrates the first view, and attaches real handlers before effects run. Apps have no local hydration wrappers or renderer imports. Todos and Recipes still mount entirely in the browser. `client:only` also works, but omits the server mount and its classes. Prefer `client:load` or `client:visible` when the mount reserves space. Lit SSR and hydration are experimental; the postcard also uses a small server-side textarea-value bridge. Only the `class` prop is supported; app props and slots are not implemented.
+
+## Current behavior and remaining work
+
+| Implemented | Remaining work |
+| --- | --- |
+| One `main(root)` startup call for empty and server-rendered mounts | Host initialization data and safe initial-state transport |
+| Template-returning views and automatic first-view hydration | General textarea serialization and preserving pre-hydration edits |
+| Root-scoped IDs, focus, shortcuts, and cleanup | Application policies for stable storage and routing identities |
+| Counter, Postcard, and code tabs with initial HTML; Todos and Recipes rendered in the browser | Direct Gleam imports/compiler watching and separately published integration tooling |
+
+Lit Labs dependencies remain experimental. Postcard's server textarea bridge is
+local to this Astro adapter; it is not general Glimlit runtime behavior. Only the
+`class` prop is supported by this integration. Other app props and slots are not
+forwarded into app initialization.
 
 ## Content and routes
 
@@ -95,8 +121,9 @@ npm run build
 
 The build produces the static site in `dist/`. Recipe samples are served from `public/recipes/samples.json`.
 
-See [GLIMLIT-FOLLOWUPS.md](./GLIMLIT-FOLLOWUPS.md) for broader framework questions raised by this site. Local mounting and integration changes are evidence for future design, not settled public Glimlit APIs.
-# astro-glimlit
+See [GLIMLIT-FOLLOWUPS.md](./GLIMLIT-FOLLOWUPS.md) for experiment history and open
+framework questions. The integration guide describes the currently implemented
+startup, view, and instance contracts.
 
 
 The runtime files in `src/glimlit_apps/runtime/` match the source Glimlit project
@@ -104,3 +131,9 @@ except for Gleam import prefixes. Instance storage-key conventions live in
 `src/lib/island-persistence.mjs`, outside the runtime. Recipe route prefixes also
 remain app policy. The original project now contains the corresponding runtime
 work; see `GLIMLIT-FOLLOWUPS.md` for the migration and remaining design questions.
+
+
+The shared runtime now has eight files. Startup and the loop live together in
+`mvu.gleam`; mutable-reference operations live in `runner.mjs`. The earlier
+`loop.gleam` and `browser.mjs` files were consolidated. App startup, view contracts,
+and application imports are unchanged by that reorganization.

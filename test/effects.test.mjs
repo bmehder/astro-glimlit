@@ -8,7 +8,7 @@ import { init, update, Msg$UserTypedNewTodo, Msg$UserSubmittedNewTodo, Msg$UserT
   Model$Model$storage, Status$isCompleted,
 } from '../build/dev/javascript/glimlit/glimlit_apps/todos/todos.mjs';
 import { run } from '../src/glimlit_apps/runtime/runner.mjs';
-import { start } from '../build/dev/javascript/glimlit/glimlit_apps/runtime/loop.mjs';
+import { start_loop as start } from '../build/dev/javascript/glimlit/glimlit_apps/runtime/mvu.mjs';
 
 test('startup requests a load; only persisted edits request saving', () => {
   const [model, effects] = init();

@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { to_list } from '#gleam/array'
-import { start } from '../build/dev/javascript/glimlit/glimlit_apps/runtime/loop.mjs'
+import { start_loop as start } from '../build/dev/javascript/glimlit/glimlit_apps/runtime/mvu.mjs'
 import { createRuntime, run, stop } from '../src/glimlit_apps/runtime/runner.mjs'
 import { saveTodos, loadTodos, focusNewTodo } from '../build/dev/javascript/glimlit/glimlit_apps/todos/effects.mjs'
 import { hashRoute, routePath } from '../src/glimlit_apps/recipes/subscriptions.mjs'
