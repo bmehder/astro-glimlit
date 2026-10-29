@@ -17,15 +17,15 @@ export function routePath(hash, root) {
  * @returns {import('../runtime/subscriptions.mjs').Subscription<Msg>}
  */
 export const hashRoute = (handleChange, root) => ({
-  start: (emit) => {
+  start: (dispatch) => {
     const prefix = routePrefix(root)
     const target = window
     const changed = () => {
       const hash = target.location.hash
       // Document anchors and other recipe islands' routes belong elsewhere.
-      if (hash === '') emit(handleChange(''))
+      if (hash === '') dispatch(handleChange(''))
       else if (hash.startsWith(prefix))
-        emit(handleChange('#/' + hash.slice(prefix.length)))
+        dispatch(handleChange('#/' + hash.slice(prefix.length)))
     }
     target.addEventListener('hashchange', changed)
     changed()

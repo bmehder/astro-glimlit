@@ -8,7 +8,7 @@
  */
 export function newTodoKey(handleNewTodo, root) {
   return {
-    start: (emit) => {
+    start: (dispatch) => {
       /** @param {KeyboardEvent} event */
       const handleKeydown = (event) => {
         const editing =
@@ -29,7 +29,7 @@ export function newTodoKey(handleNewTodo, root) {
           return
         if (event.key.toLowerCase() !== 'n') return
         event.preventDefault()
-        emit(handleNewTodo())
+        dispatch(handleNewTodo())
       }
       if (root) {
         root.addEventListener('keydown', handleKeydown)

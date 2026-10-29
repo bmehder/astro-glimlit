@@ -138,3 +138,8 @@ The shared runtime has eight core files plus the temporary server-only
 `mvu.gleam`; mutable-reference operations live in `runner.mjs`. The earlier
 `loop.gleam` and `browser.mjs` files were consolidated. App startup, view contracts,
 and application imports are unchanged by that reorganization.
+
+Subscription sources use `start(dispatch)` and return cleanup. Like a view’s
+dispatcher, this callback sends messages to the app’s update function. The manager
+guards each source’s dispatcher so calls after that subscription stops are ignored.
+See the integration guide’s “Subscription dispatchers” section.

@@ -137,12 +137,12 @@ test('storage and HTTP effects are deferred and report expected failures as mess
 test('route subscription emits initial and later hashes and removes its listener', t => {
   const oldWindow=globalThis.window
   t.after(()=>{if(oldWindow===undefined)delete globalThis.window;else globalThis.window=oldWindow})
-  const listeners=new Map(), emitted=[]
+  const listeners=new Map(), messages=[]
   globalThis.window={location:{hash:'#/recipe/2'},addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:(type)=>listeners.delete(type)}
-  const cleanup=hashRoute(hash=>hash).start(hash=>emitted.push(hash))
-  assert.deepEqual(emitted,['#/recipe/2'])
+  const cleanup=hashRoute(hash=>hash).start(hash=>messages.push(hash))
+  assert.deepEqual(messages,['#/recipe/2'])
   window.location.hash='#/new';listeners.get('hashchange')()
-  assert.deepEqual(emitted,['#/recipe/2','#/new'])
+  assert.deepEqual(messages,['#/recipe/2','#/new'])
   cleanup();assert.equal(listeners.size,0)
 })
 
@@ -308,19 +308,19 @@ test('recipe routing ignores document anchors on startup and between app routes'
     else globalThis.window = oldWindow
   })
   const listeners = new Map()
-  const emitted = []
+  const messages = []
   globalThis.window = {
     location: { hash: '#main' },
     addEventListener: (type, listener) => listeners.set(type, listener),
     removeEventListener: type => listeners.delete(type),
   }
-  const cleanup = hashRoute(hash => hash).start(hash => emitted.push(hash))
-  assert.deepEqual(emitted, [])
+  const cleanup = hashRoute(hash => hash).start(hash => messages.push(hash))
+  assert.deepEqual(messages, [])
   for (const hash of ['#/recipe/2', '#main', '#ingredients', '#/new', '#/unknown', '']) {
     window.location.hash = hash
     listeners.get('hashchange')()
   }
-  assert.deepEqual(emitted, ['#/recipe/2', '#/new', '#/unknown', ''])
+  assert.deepEqual(messages, ['#/recipe/2', '#/new', '#/unknown', ''])
   cleanup()
   assert.equal(listeners.size, 0)
 })

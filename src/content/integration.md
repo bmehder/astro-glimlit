@@ -263,3 +263,12 @@ It handles initial textarea text only. Keep native `?checked` and `?selected`
 bindings for other form defaults. It does not preserve edits made before hydration
 or turn forms into a separate state system. Revisit or remove this adapter if Lit
 adds compatible native textarea serialization; no upstream delivery date is assumed.
+
+## Subscription dispatchers
+
+A source exposes `start(dispatch)` and returns a synchronous cleanup function.
+Use `dispatch(message)` to send messages to the app’s update function, just as
+in a view. The manager supplies a dispatcher guarded by that subscription’s
+lifetime: after the source stops, calls to its dispatcher are ignored, including
+calls during cleanup. Each `subscriptions.start(key, source)` call still needs
+only the key and source.
