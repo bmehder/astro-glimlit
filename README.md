@@ -63,7 +63,7 @@ Every app exposes `main(root)`, including the homepage code tabs. The view retur
 
 Repeated components are independent. Instances are numbered in document order, even when Astro loads them in a different order. The first copy retains its established browser-storage key and recipe `#/...` routes. Later copies use separate storage keys and route prefixes such as `#recipes-app-2/recipe/1`. Persisted copies follow their position on the page. Use one adapter module per app.
 
-Counter, Postcard, and code tabs use server rendering and hydration through Lit Labs. Their adapters obtain the initial template from the same `view` used for browser updates. Glimlit detects the server marker, hydrates the first view, and attaches real handlers before effects run. Apps have no local hydration wrappers or renderer imports. Todos and Recipes still mount entirely in the browser. `client:only` also works, but omits the server mount and its classes. Prefer `client:load` or `client:visible` when the mount reserves space. Lit SSR and hydration are experimental; the postcard also uses a small server-side textarea-value bridge. Only the `class` prop is supported; app props and slots are not implemented.
+Counter, Postcard, and code tabs use server rendering and hydration through Lit Labs. Their adapters obtain the initial template from the same `view` used for browser updates. Glimlit detects the server marker, hydrates the first view, and attaches real handlers before effects run. Apps have no local hydration wrappers or renderer imports. Todos and Recipes still mount entirely in the browser. `client:only` also works, but omits the server mount and its classes. Prefer `client:load` or `client:visible` when the mount reserves space. Lit SSR and hydration are experimental; the postcard uses the isolated server-only `lit-ssr-compat.mjs` adapter for initial textarea text. Only the `class` prop is supported; app props and slots are not implemented.
 
 ## Current behavior and remaining work
 
@@ -74,8 +74,8 @@ Counter, Postcard, and code tabs use server rendering and hydration through Lit 
 | Root-scoped IDs, focus, shortcuts, and cleanup | Application policies for stable storage and routing identities |
 | Counter, Postcard, and code tabs with initial HTML; Todos and Recipes rendered in the browser | Direct Gleam imports/compiler watching and separately published integration tooling |
 
-Lit Labs dependencies remain experimental. Postcard's server textarea bridge is
-local to this Astro adapter; it is not general Glimlit runtime behavior. Only the
+Lit Labs dependencies remain experimental. The temporary `lit-ssr-compat.mjs` adapter is
+shared with the original project and remains separate from the MVU loop and browser renderer. Only the
 `class` prop is supported by this integration. Other app props and slots are not
 forwarded into app initialization.
 
@@ -133,7 +133,8 @@ remain app policy. The original project now contains the corresponding runtime
 work; see `GLIMLIT-FOLLOWUPS.md` for the migration and remaining design questions.
 
 
-The shared runtime now has eight files. Startup and the loop live together in
+The shared runtime has eight core files plus the temporary server-only
+`lit-ssr-compat.mjs` compatibility adapter. Startup and the loop live together in
 `mvu.gleam`; mutable-reference operations live in `runner.mjs`. The earlier
 `loop.gleam` and `browser.mjs` files were consolidated. App startup, view contracts,
 and application imports are unchanged by that reorganization.

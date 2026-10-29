@@ -31,8 +31,10 @@ earlier experiment, not the current migration state.
 - The local storage-key helper moved from the runtime into
   `src/lib/island-persistence.mjs`. Existing storage and recipe route conventions
   are retained as app policy, not framework requirements.
-- The textarea serialization bridge is still confined to the Astro server
-  adapter. It has not become Glimlit runtime behavior. Host initialization data,
+- Initial textarea serialization now uses the isolated, temporary
+  `lit-ssr-compat.mjs` server adapter shared by both projects. It uses parse5
+  source offsets rather than regex replacement and requires `data-ssr-value`.
+  The MVU loop and browser renderer are unchanged. Host initialization data,
   nondeterministic initialization snapshots, and pre-hydration edits remain open.
 
 ## Historical handoff: before the shared-runtime migration

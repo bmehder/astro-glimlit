@@ -153,7 +153,7 @@ The site also uses instance numbers to separate persisted copies and recipe rout
 
 The postcard adapter supplies an optional third argument to `defineApp`: a function that creates its initial lit-html template from `init()` and a server-assigned root ID. Constructing the initial model creates effect descriptions; the server callback takes the model and does not execute those effects.
 
-The postcard’s `view.mjs` exports one `view(model, dispatch, context)` function that returns a template. The adapter creates server context with `contextForId(rootId)` and calls that same view on the server; the browser runtime supplies context with the same identity and a real root. The server uses `@lit-labs/ssr` to serialize it, including Lit’s hydration markers, and marks the mount with `data-glimlit-ssr`. This adapter serializes the template directly because it also owns the local textarea bridge. The original Vite website uses the shared `runtime/server.mjs` helper for initial HTML.
+The postcard’s `view.mjs` exports one `view(model, dispatch, context)` function that returns a template. The adapter creates server context with `contextForId(rootId)` and calls that same view on the server; the browser runtime supplies context with the same identity and a real root. The server uses `@lit-labs/ssr` to serialize it, including Lit’s hydration markers, and marks the mount with `data-glimlit-ssr`. This adapter calls the shared server-only compatibility renderer for marked textarea defaults. The original Vite website uses the shared `runtime/server.mjs` helper for initial HTML.
 
 When `client:visible` starts the island, it calls `main(root)` exactly as it does for an empty mount. Glimlit detects the marker and hydrates its first view internally. This attaches bindings and event handlers to the existing HTML using the real dispatcher before effects run. All later updates render normally. App views do not import a renderer, choose a mode, or carry a hydration wrapper.
 
@@ -200,3 +200,66 @@ apps to keep startup synchronous and uniform.
 Gleam compilation remains a separate step: the site’s scripts run `gleam build` before Astro. After changing app sources, rebuild Gleam and reload. Direct `.gleam` imports and automatic compiler watching are not implemented.
 
 Only the `class` prop is currently supported; passing application props and slots would need more work. The useful foundation is already in place: Astro schedules each island, a small renderer gives it a root, and Glimlit runs the app.
+
+
+### Initial form values with SSR
+
+A property binding can work in the browser without producing equivalent initial
+server HTML. With the currently installed Lit SSR packages:
+
+| Binding | Initial server HTML |
+| --- | --- |
+| Input `.value=${text}` | Serializes a `value` attribute. |
+| Textarea `.value=${text}`, including `live(text)` | Leaves the textarea empty. `.defaultValue` does not solve this. |
+| Select `.value=${choice}` | Does not select the matching option. Use `?selected=${matches}` on each option. |
+| Checkbox/radio `?checked=${checked}` | Correctly includes or omits the boolean attribute. |
+| Option `?selected=${selected}` | Correctly includes or omits the boolean attribute. |
+
+Use boolean attribute bindings for checked/selected state in shared server/browser
+views. The tested renderer serializes `.checked=${false}` and `.selected=${false}`
+as `checked="false"` and `selected="false"`; HTML treats either attribute's presence
+as true. These findings cover these bindings, not every native control or property.
+Browser-only property binding behavior is unchanged.
+
+Lit recommends textarea `.value`; dynamic child expressions inside textarea are
+unsuitable for editable views. Server-only templates can emit textarea text but
+cannot hydrate as the same interactive template. Custom element renderers do not
+provide a native-element hook to resolve this automatically. See
+[Lit expression guidance](https://lit.dev/docs/templates/expressions/#invalid-locations)
+and [server-only templates](https://github.com/lit/lit/blob/main/packages/labs/ssr/README.md#server-only-templates).
+
+Both hosts use the temporary `lit-ssr-compat.mjs` server adapter for explicitly
+marked textarea defaults. It is separate from the MVU loop and browser renderer,
+and is not a general form solution. Preserving edits made before
+hydration is a separate unresolved question. Keep these limits explicit rather
+than adding control-specific HTML rewriting to the runtime.
+
+
+## Temporary textarea compatibility adapter
+
+`lit-ssr-compat.mjs` is a server-only, removable workaround for a Lit SSR limitation.
+`renderInitial` uses it automatically; Astro's server adapter calls the same
+`renderWithSsrCompatibility(template)` entry point. No browser rendering API changes.
+
+Keep the ordinary property binding and explicitly supply the same initial value:
+
+```javascript
+html`<textarea
+  data-ssr-value=${message}
+  .value=${live(message)}
+  @input=${handleMessageInput}
+></textarea>`
+```
+
+The adapter parses Lit's output with parse5, locates marked empty textareas, and
+inserts escaped text at their source offsets. It preserves all other output,
+including hydration markers, and accounts for HTML's removal of the first leading
+newline. Keep the textarea's literal contents empty and include its closing tag;
+conflicting contents fail explicitly. The marker stays present in both templates.
+Unmarked textareas retain Lit's normal behavior. This requires a server-only parse5
+dependency and buffers/parses the rendered HTML; it is not a streaming solution.
+
+It handles initial textarea text only. Keep native `?checked` and `?selected`
+bindings for other form defaults. It does not preserve edits made before hydration
+or turn forms into a separate state system. Revisit or remove this adapter if Lit
+adds compatible native textarea serialization; no upstream delivery date is assumed.

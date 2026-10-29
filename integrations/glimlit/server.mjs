@@ -1,5 +1,4 @@
-import { render } from '@lit-labs/ssr'
-import { collectResult } from '@lit-labs/ssr/lib/render-result.js'
+import { renderWithSsrCompatibility } from '../../src/glimlit_apps/runtime/lit-ssr-compat.mjs'
 
 const pageInstances = new WeakMap()
 
@@ -40,13 +39,7 @@ export default {
     // Separate server IDs from client-only mounts, which skip this renderer.
     const id = `${component.app}-app-ssr-${instance}`
     const template = await component.template(id)
-    const rendered = await collectResult(render(template))
-    // Lit SSR does not serialize textarea.value. The template supplies its
-    // escaped initial value as an attribute; use it as the native default text.
-    const html = rendered.replace(
-      /(<textarea\b[^>]*\bdata-ssr-value="([^"]*)"[^>]*>)(<\/textarea>)/g,
-      (_match, opening, value, closing) => opening + value + closing,
-    )
+    const html = await renderWithSsrCompatibility(template)
     return {
       html: `<div data-glimlit-root data-glimlit-ssr id="${escapeAttribute(id)}" data-glimlit-instance="${instance}" tabindex="-1"${classAttribute}>${html}</div>`,
     }
